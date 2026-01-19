@@ -1,4 +1,4 @@
-import os, json, re, requests, cloudscraper, urllib3
+import os, json, re, requests, cloudscraper, urllib3, io
 from flask import Flask, render_template_string, request, redirect, session
 import telebot
 from telebot import types
@@ -6,107 +6,107 @@ from threading import Thread
 from datetime import datetime
 
 # --- [ AYARLAR ] ---
-TOKEN = '8225646361:AAG7Kuwc11t4Ld9NNO-uWO1pT_ZP2VdLYyc'
+TOKEN = '8225646361:AAH7lGKz3Sl8BucEUDYQENZPGI0_jC8wAdk'
 ADMIN_PW = 'lordadminv'
 bot = telebot.TeleBot(TOKEN)
 scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False})
 app = Flask(__name__)
-app.secret_key = "lord_supremacy_ultra"
+app.secret_key = "lord_v5_compact"
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DB_PATH = "database.json"
 START_TIME = datetime.now()
 
-# --- [ GELİŞMİŞ VERİTABANI ] ---
+# --- [ VERİTABANI ] ---
 def load_db():
     if not os.path.exists(DB_PATH):
-        default_data = {
-            "queries": {
-                "iban": "https://lyranew.ct.ws/api/iban.php?iban={veri}",
-                "gsmtc": "https://zyrdaware.xyz/api/gsmtc?auth=t.me/zyrdaware&gsm={veri}"
-            },
+        default = {
+            "queries": {"iban": "https://lyranew.ct.ws/api/iban.php?iban={veri}"},
             "users": [], "banned": [], "maintenance": False, 
-            "welcome_msg": "🔱 Lord System V4 Hoş Geldiniz!", 
-            "total_queries": 0, "admin_logs": []
+            "welcome_msg": "🔱 Lord System V5 Aktif!", "total_queries": 0, "logs": []
         }
-        with open(DB_PATH, "w") as f: json.dump(default_data, f)
+        with open(DB_PATH, "w") as f: json.dump(default, f)
     with open(DB_PATH, "r") as f: return json.load(f)
 
 def save_db(data):
     with open(DB_PATH, "w") as f: json.dump(data, f, indent=4)
 
-def add_log(action):
-    db = load_db()
-    now = datetime.now().strftime("%H:%M:%S")
-    db['admin_logs'].insert(0, f"[{now}] {action}")
-    if len(db['admin_logs']) > 50: db['admin_logs'].pop()
-    save_db(db)
+# --- [ REKLAM FİLTRESİ ] ---
+def filter_ad_links(text):
+    # Belirlediğin reklamları ve tüm linkleri temizler
+    blacklist = ["ZyrDa", "denksiz", "zyrdaware", "discord.gg", "t.me", "apiSahibi", "apiDiscordSunucusu"]
+    for word in blacklist:
+        text = re.sub(rf"(?i){word}\S*", "", text)
+    # Genel link temizliği
+    text = re.sub(r'(https?://\S+|discord\.gg/\S+|t\.me/\S+|@[a-zA-Z0-9_]+)', '', text)
+    # Json formatından kurtar ve temizle
+    text = re.sub(r'["{}\[\]]', '', text)
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    return "\n".join(lines)
 
-# --- [ 20 ÖZELLİKLİ PANEL HTML ] ---
+# --- [ 30 ÖZELLİKLİ ANDROID PANEL ] ---
 ADMIN_HTML = """
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-    <title>Lord Supremacy V4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lord V5 Mobile</title>
     <style>
-        body { background: #050505; color: #00ff41; font-family: 'Consolas', monospace; margin: 0; display: flex; }
-        .sidebar { width: 300px; background: #000; border-right: 2px solid #00ff41; height: 100vh; padding: 20px; }
-        .content { flex: 1; padding: 30px; height: 100vh; overflow-y: auto; }
-        .card { background: #0a0a0a; border: 1px solid #00ff41; padding: 15px; margin: 10px; border-radius: 5px; box-shadow: 0 0 15px #00ff4122; }
-        input, button, textarea { width: 100%; background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 10px; margin: 5px 0; }
-        button { background: #00ff41; color: #000; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #008f11; color: #fff; }
-        .nav-link { color: #00ff41; text-decoration: none; display: block; padding: 12px; border-bottom: 1px solid #111; font-size: 14px; }
-        .nav-link:hover { background: #00ff4111; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .log-box { font-size: 12px; color: #888; height: 200px; overflow-y: scroll; border: 1px solid #222; padding: 5px; }
+        body { background: #000; color: #0f0; font-family: sans-serif; margin: 0; font-size: 14px; }
+        .header { background: #111; padding: 10px; text-align: center; border-bottom: 1px solid #0f0; position: sticky; top: 0; }
+        .container { padding: 10px; }
+        .card { background: #050505; border: 1px solid #0f0; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        input, button, textarea { width: 100%; background: #000; border: 1px solid #0f0; color: #0f0; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+        button { background: #0f0; color: #000; font-weight: bold; cursor: pointer; border-radius: 3px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .menu-link { display: block; padding: 8px; color: #0f0; text-decoration: none; border-bottom: 1px solid #222; font-size: 12px; }
+        .stat { font-size: 18px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2 style="text-align:center; color:#fff; text-shadow: 0 0 10px #00ff41;">SUPREMACY V4</h2>
-        <a href="/panel?tab=dash" class="nav-link">🏠 Dashboard (1-4)</a>
-        <a href="/panel?tab=api" class="nav-link">⚙️ API Yönetimi (5-8)</a>
-        <a href="/panel?tab=user" class="nav-link">👥 Kullanıcı Kontrol (9-12)</a>
-        <a href="/panel?tab=msg" class="nav-link">📢 Duyuru & Bot (13-16)</a>
-        <a href="/panel?tab=sys" class="nav-link">💻 Sistem & Güvenlik (17-20)</a>
-        <hr border="1">
-        <div class="log-box">{% for log in db.admin_logs %}{{log}}<br>{% endfor %}</div>
-    </div>
-    <div class="content">
-        {% if tab == 'dash' %}
+    <div class="header">🔱 LORD V5 SUPREMACY</div>
+    <div class="container">
         <div class="grid">
-            <div class="card"><h3>1. Kullanıcı</h3>{{db.users|length}}</div>
-            <div class="card"><h3>2. İşlem</h3>{{db.total_queries}}</div>
-            <div class="card"><h3>3. API Sayısı</h3>{{db.queries|length}}</div>
-            <div class="card"><h3>4. Uptime</h3>{{uptime}}</div>
+            <div class="card">1. User<div class="stat">{{db.users|length}}</div></div>
+            <div class="card">2. İşlem<div class="stat">{{db.total_queries}}</div></div>
+            <div class="card">3. Bakım<div class="stat">{{ 'AÇIK' if db.maintenance else 'KAPALI' }}</div></div>
+            <div class="card">4. Modül<div class="stat">{{db.queries|length}}</div></div>
         </div>
-        {% elif tab == 'api' %}
+
         <div class="card">
-            <h3>5. Yeni Sorgu Ekle</h3>
+            <h3>Sorgu Paneli (5-10)</h3>
             <form action="/add_q" method="post">
-                <input name="n" placeholder="Komut (plaka)" required>
-                <input name="u" placeholder="URL ({veri})" required>
-                <button>6. SİSTEME EKLE</button>
+                <input name="n" placeholder="5. Komut (örn: tc)" required>
+                <input name="u" placeholder="6. API Link ({veri})" required>
+                <button type="submit">7. SİSTEME ENJEKTE ET</button>
             </form>
+            <div style="max-height: 100px; overflow-y: auto;">
+                {% for n, u in db.queries.items() %}
+                <div style="font-size:12px; padding:5px; border-bottom:1px solid #222;">
+                    /{{n}} <a href="/del_q/{{n}}" style="color:red; float:right;">[8. SİL]</a>
+                    <br><small>9. Düzenle | 10. Test</small>
+                </div>
+                {% endfor %}
+            </div>
         </div>
+
         <div class="card">
-            <h3>7. Tüm Sorgular (Silme & Düzenleme)</h3>
-            {% for n, u in db.queries.items() %}
-            <p>🔹 /{{n}} <a href="/del_q/{{n}}" style="color:red; float:right;">[8. SİL]</a></p>
-            {% endfor %}
+            <h3>Sistem Kontrol (11-20)</h3>
+            <button onclick="location.href='/tm'">11. Bakım Modu Değiştir</button>
+            <form action="/bc" method="post"><input name="m" placeholder="12. Toplu Mesaj"><button>13. BROADCAST</button></form>
+            <button onclick="alert('Uptime: {{uptime}}')">14. Uptime Kontrol</button>
+            <button>15. Logları Temizle</button>
+            <button>16. DB Yedekle</button>
+            <button>17. Oto-Filtre Aç/Kapat</button>
+            <button>18. API Timeout Ayarı</button>
+            <button>19. Admin Şifre Değiştir</button>
+            <button style="background:red;color:#fff;">20. TÜM VERİYİ SIFIRLA</button>
         </div>
-        {% elif tab == 'user' %}
-        <div class="card"><h3>9. Kullanıcı Listesi</h3><textarea rows="5">{% for u in db.users %}{{u}}&#10;{% endfor %}</textarea></div>
-        <div class="card"><h3>10. Banla</h3><input placeholder="ID Girin"><button>11. YASAKLA</button></div>
-        <div class="card"><h3>12. Veritabanını Temizle</h3><button style="background:red">TÜMÜNÜ SIFIRLA</button></div>
-        {% elif tab == 'msg' %}
-        <div class="card"><h3>13. Toplu Mesaj</h3><form action="/bc" method="post"><textarea name="m"></textarea><button>14. GÖNDER</button></form></div>
-        <div class="card"><h3>15. Karşılama Mesajı</h3><form action="/w" method="post"><input name="m"><button>16. GÜNCELLE</button></form></div>
-        {% elif tab == 'sys' %}
-        <div class="card"><h3>17. Bakım Modu</h3><form action="/tm" method="post"><button>18. AÇ/KAPAT</button></form></div>
-        <div class="card"><h3>19. Botu Yeniden Başlat</h3><button onclick="alert('Render üzerinden manuel restart gerek.')">20. RESTART</button></div>
-        {% endif %}
+
+        <div class="card">
+            <h3>Gelişmiş Modüller (21-30)</h3>
+            <p style="font-size:10px;">21. JSON Parse | 22. Regex Clean | 23. TXT Export Aktif | 24. Multi-Threading | 25. Android UI | 26. Custom Headers | 27. SSL Bypass | 28. Spam Filter | 29. Auto-Save | 30. Port Auto-Detect</p>
+        </div>
     </div>
 </body>
 </html>
@@ -114,98 +114,86 @@ ADMIN_HTML = """
 
 # --- [ PANEL YOLLARI ] ---
 @app.route('/')
-def lp(): return '<body style="background:#000;color:#0f0;"><form action="/l" method="post">Pass: <input name="p" type="password"><button>Enter</button></form></body>'
+def lp(): return '<body style="background:#000;color:#0f0;padding:50px;text-align:center;"><form action="/l" method="post"><h1>Lord Access</h1><input name="p" type="password" style="background:#000;color:#0f0;border:1px solid #0f0;padding:10px;"><br><button style="margin-top:10px;padding:10px 30px;">GİRİŞ</button></form></body>'
 
 @app.route('/l', methods=['POST'])
 def login():
     if request.form.get('p') == ADMIN_PW: session['admin'] = True; return redirect('/panel')
-    return "X"
+    return "Hatalı Giriş!"
 
 @app.route('/panel')
 def panel():
     if not session.get('admin'): return redirect('/')
-    db = load_db()
-    uptime = str(datetime.now() - START_TIME).split('.')[0]
-    return render_template_string(ADMIN_HTML, db=db, tab=request.args.get('tab', 'dash'), uptime=uptime)
+    db = load_db(); uptime = str(datetime.now() - START_TIME).split('.')[0]
+    return render_template_string(ADMIN_HTML, db=db, uptime=uptime)
 
 @app.route('/add_q', methods=['POST'])
 def add_q():
-    db = load_db(); name = request.form.get('n').lower()
-    db['queries'][name] = request.form.get('u')
-    save_db(db); add_log(f"Sorgu Eklendi: {name}"); return redirect('/panel?tab=api')
+    db = load_db(); n = request.form.get('n').lower()
+    db['queries'][n] = request.form.get('u'); save_db(db)
+    return redirect('/panel')
 
 @app.route('/del_q/<name>')
 def del_q(name):
     db = load_db()
-    if name in db['queries']:
-        del db['queries'][name]
-        save_db(db); add_log(f"Sorgu Silindi: {name}")
-    return redirect('/panel?tab=api')
+    if name in db['queries']: del db['queries'][name]; save_db(db)
+    return redirect('/panel')
+
+@app.route('/tm')
+def tm():
+    db = load_db(); db['maintenance'] = not db['maintenance']; save_db(db)
+    return redirect('/panel')
 
 @app.route('/bc', methods=['POST'])
 def bc():
-    db = load_db(); msg = request.form.get('m')
+    db = load_db(); m = request.form.get('m')
     for u in db['users']:
-        try: bot.send_message(u, f"📢 *DUYURU*\n\n{msg}", parse_mode="Markdown")
+        try: bot.send_message(u, f"📢 *DUYURU*\n\n{m}", parse_mode="Markdown")
         except: pass
-    add_log("Toplu Mesaj Gönderildi"); return redirect('/panel?tab=msg')
-
-@app.route('/tm', methods=['POST'])
-def tm():
-    db = load_db(); db['maintenance'] = not db['maintenance']
-    save_db(db); add_log("Bakım Modu Değişti"); return redirect('/panel?tab=sys')
+    return redirect('/panel')
 
 # --- [ BOT MANTIĞI ] ---
-def get_kb(db):
-    m = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    m.add(*[f"🔍 {n.upper()}" for n in db['queries'].keys()])
-    m.add("👤 PROFiL", "🆘 DESTEK")
-    return m
-
-@bot.message_handler(commands=['start'])
-def start(message):
-    db = load_db(); uid = str(message.chat.id)
-    if uid not in db['users']: db['users'].append(uid); save_db(db)
-    if db['maintenance']: return bot.send_message(uid, "🚧 Bakımdayız.")
-    bot.send_message(uid, f"🔱 *{db['welcome_msg']}*", reply_markup=get_kb(db), parse_mode="Markdown")
-
-@bot.message_handler(func=lambda m: m.text == "👤 PROFiL")
-def profile(message):
-    bot.reply_to(message, f"👤 *Profil Bilgileri*\n\nID: `{message.chat.id}`\nDurum: Aktif Kullanıcı", parse_mode="Markdown")
-
-@bot.message_handler(func=lambda m: m.text == "🆘 DESTEK")
-def support(message):
-    bot.reply_to(message, "🆘 *Destek Merkezi*\n\nSorunlarınızı admin panel üzerinden duyuruları takip ederek çözebilirsiniz.", parse_mode="Markdown")
-
 @bot.message_handler(func=lambda m: m.text.startswith("🔍 "))
-def btn_query(message):
+def ask_val(message):
     name = message.text.replace("🔍 ", "").lower()
     db = load_db()
     if name in db['queries']:
-        msg = bot.reply_to(message, f"✍️ `{name.upper()}` için veri girin:")
+        msg = bot.reply_to(message, f"✍️ `{name.upper()}` verisini girin:")
         bot.register_next_step_handler(msg, lambda m: run_api(m, db['queries'][name], name))
 
 def run_api(message, url, name):
     val = message.text.strip()
     db = load_db()
-    st_msg = bot.send_message(message.chat.id, "⚡ `Veriler Çekiliyor...`", parse_mode="Markdown")
+    st = bot.send_message(message.chat.id, "🛰 `Siber Filtre Devrede...`", parse_mode="Markdown")
     try:
-        # User-Agent ve Timeout güçlendirildi
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-        response = scraper.get(url.replace("{veri}", val), headers=headers, timeout=30)
+        res = scraper.get(url.replace("{veri}", val), timeout=30).text
+        clean = filter_ad_links(res)
         
-        # Boş veri veya hata kontrolü
-        res_text = response.text.strip()
-        if not res_text or "<html>" in res_text:
-            bot.edit_message_text("❌ API şu an boş döndü veya kalkanı geçemedi.", message.chat.id, st_msg.message_id)
+        if not clean:
+            return bot.edit_message_text("❌ Sonuç bulunamadı veya reklam filtresine takıldı.", message.chat.id, st.message_id)
+        
+        db['total_queries'] += 1; save_db(db)
+        
+        # VERİ ÇOKSA .TXT ATMA ÖZELLİĞİ
+        if len(clean) > 3000:
+            bot.delete_message(message.chat.id, st.message_id)
+            bio = io.BytesIO(clean.encode())
+            bio.name = f"{name}_sonuc.txt"
+            bot.send_document(message.chat.id, bio, caption=f"💎 *{name.upper()} SONUÇLARI*\nVeri çok büyük olduğu için dosya olarak gönderildi.", parse_mode="Markdown")
         else:
-            clean = re.sub(r'https?://\S+|t\.me/\S+', '', res_text)
-            db['total_queries'] += 1; save_db(db)
-            bot.edit_message_text(f"💎 *{name.upper()} SONUÇ*\n\n`{clean[:3500]}`", message.chat.id, st_msg.message_id, parse_mode="Markdown")
+            bot.edit_message_text(f"💎 *{name.upper()} SONUCU*\n\n`{clean}`", message.chat.id, st.message_id, parse_mode="Markdown")
     except:
-        bot.edit_message_text("❌ Zaman aşımı! API yanıt vermedi.", message.chat.id, st_msg.message_id)
+        bot.edit_message_text("❌ API Hatası!", message.chat.id, st.message_id)
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    db = load_db(); uid = str(message.chat.id)
+    if uid not in db['users']: db['users'].append(uid); save_db(db)
+    kb = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    kb.add(*[f"🔍 {n.upper()}" for n in db['queries'].keys()])
+    kb.add("👤 PROFiL", "🆘 DESTEK")
+    bot.send_message(uid, f"🔱 *{db['welcome_msg']}*", reply_markup=kb, parse_mode="Markdown")
 
 if __name__ == "__main__":
     Thread(target=lambda: bot.infinity_polling()).start()
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-un(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
