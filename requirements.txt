@@ -1,0 +1,6 @@
+pyTelegramBotAPI
+requests
+cloudscraper
+flask
+urllib3
+gunicorn
